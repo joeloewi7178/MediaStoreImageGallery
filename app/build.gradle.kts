@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     `kotlin-android`
     `kotlin-kapt`
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -68,4 +69,13 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:${Versions.compose}")
     debugImplementation("androidx.compose.ui:ui-tooling:${Versions.compose}")
+
+    //hilt
+    implementation("com.google.dagger:hilt-android:${Versions.hilt}")
+    implementation("androidx.hilt:hilt-navigation-compose:1.0.0-rc01")
+    kapt("com.google.dagger:hilt-android-compiler:${Versions.hilt}")
+}
+
+kapt {
+    correctErrorTypes = true
 }

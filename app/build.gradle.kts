@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     `kotlin-android`
     `kotlin-kapt`
+    `kotlin-parcelize`
     id("dagger.hilt.android.plugin")
 }
 
@@ -74,6 +75,12 @@ dependencies {
     implementation("com.google.dagger:hilt-android:${Versions.hilt}")
     implementation("androidx.hilt:hilt-navigation-compose:1.0.0-rc01")
     kapt("com.google.dagger:hilt-android-compiler:${Versions.hilt}")
+
+    //paging
+    implementation("androidx.paging:paging-runtime-ktx:${Versions.paging}")
+    implementation("androidx.paging:paging-compose:1.0.0-alpha14")
+
+
 }
 
 kapt {

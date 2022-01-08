@@ -80,7 +80,18 @@ dependencies {
     implementation("androidx.paging:paging-runtime-ktx:${Versions.paging}")
     implementation("androidx.paging:paging-compose:1.0.0-alpha14")
 
+    //compose
+    implementation("androidx.navigation:navigation-compose:2.4.0-rc01")
+    implementation("androidx.compose.material:material-icons-extended:${Versions.compose}")
 
+    //viewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:${Versions.lifecycle}")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${Versions.lifecycle}")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:${Versions.lifecycle}")
+
+    //accompanist
+    implementation("com.google.accompanist:accompanist-permissions:${Versions.accompanist}")
+    implementation("com.google.accompanist:accompanist-pager:${Versions.accompanist}")
 }
 
 kapt {

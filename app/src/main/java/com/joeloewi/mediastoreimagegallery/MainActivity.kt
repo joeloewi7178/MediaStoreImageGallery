@@ -13,12 +13,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.joeloewi.mediastoreimagegallery.ui.mediastoreimagegallery.CameraScreen
 import com.joeloewi.mediastoreimagegallery.ui.mediastoreimagegallery.GriddedMediaStoreImagesScreen
 import com.joeloewi.mediastoreimagegallery.ui.mediastoreimagegallery.PagedMediaStoreImagesScreen
 import com.joeloewi.mediastoreimagegallery.ui.theme.MediaStoreImageGalleryTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+@ExperimentalPermissionsApi
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +33,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@ExperimentalPermissionsApi
 @Composable
 fun MediaStoreImageGalleryApp() {
     val navController = rememberNavController()
@@ -47,7 +50,7 @@ fun MediaStoreImageGalleryApp() {
                 ) {
                     composable("griddedMediaStoreImagesScreen") {
                         GriddedMediaStoreImagesScreen(
-                            navController = navController
+                            navController = navController,
                         )
                     }
 
@@ -64,6 +67,7 @@ fun MediaStoreImageGalleryApp() {
     }
 }
 
+@ExperimentalPermissionsApi
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {

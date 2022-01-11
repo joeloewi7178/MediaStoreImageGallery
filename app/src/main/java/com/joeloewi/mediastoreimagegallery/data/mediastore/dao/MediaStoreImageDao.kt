@@ -11,5 +11,7 @@ interface MediaStoreImageDao {
 
     val contentResolver: ContentResolver
 
-    fun getImages(limit: Int, offset: Int): PagingSource<Int, MediaStoreImage>
+    val pageSize: Int
+
+    fun getImages(): PagingSource<Int, MediaStoreImage>
 }

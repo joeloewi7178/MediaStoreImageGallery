@@ -22,6 +22,14 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            isMinifyEnabled = false
+            isDebuggable = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
         getByName("release") {
             isMinifyEnabled = false
             isDebuggable = false
@@ -92,6 +100,9 @@ dependencies {
     //accompanist
     implementation("com.google.accompanist:accompanist-permissions:${Versions.accompanist}")
     implementation("com.google.accompanist:accompanist-pager:${Versions.accompanist}")
+
+    //image load
+    implementation("io.coil-kt:coil-compose:${Versions.coil}")
 }
 
 kapt {

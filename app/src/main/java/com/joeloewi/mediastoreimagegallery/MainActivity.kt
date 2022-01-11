@@ -3,12 +3,14 @@ package com.joeloewi.mediastoreimagegallery
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
@@ -20,6 +22,7 @@ import com.joeloewi.mediastoreimagegallery.ui.mediastoreimagegallery.PagedMediaS
 import com.joeloewi.mediastoreimagegallery.ui.theme.MediaStoreImageGalleryTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+@ExperimentalFoundationApi
 @ExperimentalPermissionsApi
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -33,6 +36,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@ExperimentalFoundationApi
 @ExperimentalPermissionsApi
 @Composable
 fun MediaStoreImageGalleryApp() {
@@ -51,6 +55,7 @@ fun MediaStoreImageGalleryApp() {
                     composable("griddedMediaStoreImagesScreen") {
                         GriddedMediaStoreImagesScreen(
                             navController = navController,
+                            mediaStoreImagesViewModel = hiltViewModel()
                         )
                     }
 
@@ -67,6 +72,7 @@ fun MediaStoreImageGalleryApp() {
     }
 }
 
+@ExperimentalFoundationApi
 @ExperimentalPermissionsApi
 @Preview(showBackground = true)
 @Composable

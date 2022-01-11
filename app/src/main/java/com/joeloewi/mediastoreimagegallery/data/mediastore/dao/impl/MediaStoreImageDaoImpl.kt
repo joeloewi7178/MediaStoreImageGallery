@@ -24,7 +24,9 @@ class MediaStoreImageDaoImpl @Inject constructor(
 
     override val contentResolver: ContentResolver = application.contentResolver
 
-    override fun getImages(limit: Int, offset: Int): PagingSource<Int, MediaStoreImage> =
+    override val pageSize: Int = 4
+
+    override fun getImages(): PagingSource<Int, MediaStoreImage> =
         object : PagingSource<Int, MediaStoreImage>() {
 
             init {
@@ -40,8 +42,6 @@ class MediaStoreImageDaoImpl @Inject constructor(
                 )
             }
 
-            private val pageSize = 16
-
             override fun getRefreshKey(state: PagingState<Int, MediaStoreImage>): Int? =
                 state.anchorPosition?.let { state.closestPageToPosition(it)?.prevKey }
 
@@ -52,7 +52,13 @@ class MediaStoreImageDaoImpl @Inject constructor(
                     MediaStore.Images.Media.DATE_ADDED,
                 )
 
-                val cursor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val limit = params.loadSize
+
+                val offset = params.key ?: 0
+
+                //bundle을 이용하는 쿼리는 26부터 사용가능한데 26, 27의 가상 기기에서 이미 로드된 데이터를 다시 로드 하는 문제가 있어
+                //사용이 강제화된 29부터 사용하도록 함
+                val cursor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val bundle = bundleOf(
                         ContentResolver.QUERY_ARG_OFFSET to limit * offset,
                         ContentResolver.QUERY_ARG_LIMIT to limit,
@@ -102,12 +108,10 @@ class MediaStoreImageDaoImpl @Inject constructor(
                         )
                     }
 
-                    val position = params.key
-
                     LoadResult.Page(
                         data = mediaStoreImages,
-                        prevKey = position?.let { it - 1 },
-                        nextKey = if (mediaStoreImages.isEmpty()) null else position?.let { it + (params.loadSize / pageSize) }
+                        prevKey = offset.takeIf { it > 0 }?.let { it - 1 },
+                        nextKey = if (mediaStoreImages.isEmpty()) null else offset + (params.loadSize / pageSize)
                     )
                 } catch (cause: Throwable) {
                     LoadResult.Error(cause)

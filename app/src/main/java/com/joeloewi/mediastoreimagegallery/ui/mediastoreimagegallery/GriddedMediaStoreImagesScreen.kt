@@ -4,30 +4,45 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.GridCells
+import androidx.compose.foundation.lazy.LazyGridScope
+import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import coil.compose.rememberImagePainter
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionsRequired
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.joeloewi.mediastoreimagegallery.R
+import com.joeloewi.mediastoreimagegallery.data.mediastore.model.MediaStoreImage
 import com.joeloewi.mediastoreimagegallery.ui.theme.MediaStoreImageGalleryTheme
+import com.joeloewi.mediastoreimagegallery.viewmodel.MediaStoreImagesViewModel
 
+@ExperimentalFoundationApi
 @ExperimentalPermissionsApi
 @Composable
 fun GriddedMediaStoreImagesScreen(
-    navController: NavController
+    navController: NavController,
+    mediaStoreImagesViewModel: MediaStoreImagesViewModel
 ) {
     val localContext = LocalContext.current
     val multiplePermissionsState = rememberMultiplePermissionsState(
@@ -98,7 +113,11 @@ fun GriddedMediaStoreImagesScreen(
             }
         }
     ) {
+        val mediaStoreImages = mediaStoreImagesViewModel.mediaStoreImages.collectAsLazyPagingItems()
+
         GriddedMediaStoreImageContent(
+            mediaStoreImages = mediaStoreImages,
+            cells = mediaStoreImagesViewModel.cells,
             onImageClick = {
                 navController.navigate("pagedMediaStoreImagesScreen")
             },
@@ -109,11 +128,19 @@ fun GriddedMediaStoreImagesScreen(
     }
 }
 
+@ExperimentalFoundationApi
 @Composable
 fun GriddedMediaStoreImageContent(
+    mediaStoreImages: LazyPagingItems<MediaStoreImage>,
+    cells: Int,
     onImageClick: () -> Unit,
     onAddImageClick: () -> Unit
 ) {
+    //이미지를 리스트화 하는 경우에는 이미지의 높이(크기)가 지정되어야 제대로 표시됨
+    val density = LocalContext.current.resources.displayMetrics.density
+    val width = LocalView.current.width
+    val size = (width / density) / cells
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = onAddImageClick) {
@@ -124,11 +151,53 @@ fun GriddedMediaStoreImageContent(
             }
         }
     ) {
-        Column {
-            Text("GriddedMediaStoreImagesScreen")
-            Button(onClick = onImageClick) {
-                Text(text = "pagedMediaStoreImagesScreen")
+        LazyVerticalGrid(
+            cells = GridCells.Adaptive(minSize = size.dp)
+        ) {
+            itemsIndexed(
+                items = mediaStoreImages,
+                key = { index, mediaStoreImage ->
+                    mediaStoreImage.id
+                }
+            ) { index, mediaStoreImage ->
+                Image(
+                    painter = rememberImagePainter(
+                        data = mediaStoreImage?.contentUri,
+                        builder = {
+                            crossfade(true)
+                            placeholder(R.drawable.image_placeholder)
+                        }
+                    ),
+                    modifier = Modifier.size(size = size.dp),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center
+                )
             }
+        }
+    }
+}
+
+@ExperimentalFoundationApi
+fun <T : Any> LazyGridScope.itemsIndexed(
+    items: LazyPagingItems<T>,
+    key: ((index: Int, item: T) -> Any)? = null,
+    itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit
+) {
+    items(
+        count = items.itemCount
+    ) { index ->
+        key(
+            if (key == null) null else {
+                val item = items.peek(index)
+                if (item == null) {
+                    index
+                } else {
+                    key(index, item)
+                }
+            }
+        ) {
+            itemContent(index, items[index])
         }
     }
 }
@@ -137,9 +206,9 @@ fun GriddedMediaStoreImageContent(
 @Composable
 fun GriddedMediaStoreImagesScreenPreview() {
     MediaStoreImageGalleryTheme {
-        GriddedMediaStoreImageContent(
+        /*GriddedMediaStoreImageContent(
             onImageClick = {},
             onAddImageClick = {}
-        )
+        )*/
     }
 }

@@ -62,7 +62,8 @@ fun MediaStoreImageGalleryApp() {
                     route = "mediaStoreImage"
                 ) {
                     composable("griddedMediaStoreImagesScreen") {
-                        val parentEntry = remember { navController.getBackStackEntry("mediaStoreImage") }
+                        val parentEntry =
+                            remember { navController.getBackStackEntry("mediaStoreImage") }
 
                         GriddedMediaStoreImagesScreen(
                             navController = navController,
@@ -79,7 +80,8 @@ fun MediaStoreImageGalleryApp() {
                         )
                     ) { navBackStackEntry ->
                         val index = navBackStackEntry.arguments?.getInt("index") ?: 0
-                        val parentEntry = remember { navController.getBackStackEntry("mediaStoreImage") }
+                        val parentEntry =
+                            remember { navController.getBackStackEntry("mediaStoreImage") }
 
                         PagedMediaStoreImagesScreen(
                             index = index,
@@ -88,7 +90,10 @@ fun MediaStoreImageGalleryApp() {
                     }
 
                     composable("cameraScreen") {
-                        CameraScreen()
+                        CameraScreen(
+                            navController = navController,
+                            cameraViewModel = hiltViewModel()
+                        )
                     }
                 }
             }

@@ -15,11 +15,12 @@ import javax.inject.Inject
 class MediaStoreImagesViewModel @Inject constructor(
     mediaStoreImageDao: MediaStoreImageDao
 ) : ViewModel() {
-    val cells = mediaStoreImageDao.pageSize
+    val cells = 4
 
     val mediaStoreImages = Pager(
         config = PagingConfig(
-            pageSize = cells,
+            pageSize = mediaStoreImageDao.pageSize,
+            jumpThreshold = mediaStoreImageDao.pageSize * 5
         ),
         pagingSourceFactory = { mediaStoreImageDao.getImages() }
     ).flow.flowOn(Dispatchers.IO).cachedIn(viewModelScope)

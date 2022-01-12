@@ -37,6 +37,7 @@ import com.google.accompanist.permissions.PermissionsRequired
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.joeloewi.mediastoreimagegallery.R
 import com.joeloewi.mediastoreimagegallery.data.mediastore.model.MediaStoreImage
+import com.joeloewi.mediastoreimagegallery.data.mediastore.model.PagingPlaceholderKey
 import com.joeloewi.mediastoreimagegallery.ui.theme.MediaStoreImageGalleryTheme
 import com.joeloewi.mediastoreimagegallery.viewmodel.MediaStoreImagesViewModel
 
@@ -176,9 +177,6 @@ fun GriddedMediaStoreImageContent(
             ) {
                 itemsIndexed(
                     items = mediaStoreImages,
-                    key = { _, mediaStoreImage ->
-                        mediaStoreImage.id
-                    }
                 ) { index, mediaStoreImage ->
                     Image(
                         painter = rememberImagePainter(
@@ -214,7 +212,7 @@ fun <T : Any> LazyGridScope.itemsIndexed(
             if (key == null) null else {
                 val item = items.peek(index)
                 if (item == null) {
-                    index
+                    PagingPlaceholderKey(index)
                 } else {
                     key(index, item)
                 }

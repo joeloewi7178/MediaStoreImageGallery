@@ -21,6 +21,7 @@ import com.google.accompanist.pager.PagerDefaults
 import com.google.accompanist.pager.rememberPagerState
 import com.joeloewi.mediastoreimagegallery.R
 import com.joeloewi.mediastoreimagegallery.data.mediastore.model.MediaStoreImage
+import com.joeloewi.mediastoreimagegallery.data.mediastore.model.PagingPlaceholderKey
 import com.joeloewi.mediastoreimagegallery.ui.theme.MediaStoreImageGalleryTheme
 import com.joeloewi.mediastoreimagegallery.viewmodel.MediaStoreImagesViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
@@ -71,7 +72,7 @@ fun PagedMediaStoreImagesContent(
             state = horizontalPagerState
         ) { page ->
             key(
-                mediaStoreImages.peek(page)?.id ?: page
+                PagingPlaceholderKey(page)
             ) {
                 val mediaStoreImage = mediaStoreImages[page]
 

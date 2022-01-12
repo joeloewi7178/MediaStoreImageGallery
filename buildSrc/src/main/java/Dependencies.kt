@@ -5,4 +5,7 @@ object Versions {
     const val lifecycle = "2.4.0"
     const val accompanist = "0.20.2"
     const val coil = "1.4.0"
+    const val camera = "1.1.0-alpha10"
+    const val cameraExtension = "1.0.0-alpha30"
+    const val concurrentFuture = "1.1.0"
 }

@@ -103,6 +103,17 @@ dependencies {
 
     //image load
     implementation("io.coil-kt:coil-compose:${Versions.coil}")
+
+    //camerax
+    implementation("androidx.camera:camera-core:${Versions.camera}")
+    implementation("androidx.camera:camera-lifecycle:${Versions.camera}")
+
+    //camerax extension
+    implementation("androidx.camera:camera-view:${Versions.cameraExtension}")
+    implementation("androidx.camera:camera-extensions:${Versions.cameraExtension}")
+
+    //listenable future to coroutine
+    implementation("androidx.concurrent:concurrent-futures-ktx:${Versions.concurrentFuture}")
 }
 
 kapt {

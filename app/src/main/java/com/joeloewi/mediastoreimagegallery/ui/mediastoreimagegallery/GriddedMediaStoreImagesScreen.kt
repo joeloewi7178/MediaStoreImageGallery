@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +28,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.rememberImagePainter
@@ -141,6 +143,7 @@ fun GriddedMediaStoreImageContent(
     val density = LocalContext.current.resources.displayMetrics.density
     val width = LocalView.current.width
     val size = (width / density) / cells
+    val mediaStoreImagesLoadState = mediaStoreImages.loadState
 
     Scaffold(
         floatingActionButton = {
@@ -152,30 +155,47 @@ fun GriddedMediaStoreImageContent(
             }
         }
     ) {
-        LazyVerticalGrid(
-            cells = GridCells.Adaptive(minSize = size.dp)
-        ) {
-            itemsIndexed(
-                items = mediaStoreImages,
-                key = { index, mediaStoreImage ->
-                    mediaStoreImage.id
-                }
-            ) { index, mediaStoreImage ->
-                Image(
-                    painter = rememberImagePainter(
-                        data = mediaStoreImage?.contentUri,
-                        builder = {
-                            crossfade(true)
-                            placeholder(R.drawable.image_placeholder)
-                        }
-                    ),
-                    modifier = Modifier
-                        .size(size = size.dp)
-                        .clickable { onImageClick(index) },
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center
+        if (mediaStoreImagesLoadState.refresh is LoadState.NotLoading && mediaStoreImagesLoadState.append.endOfPaginationReached && mediaStoreImages.itemCount == 0) {
+            //사진이 없을 때
+            //로딩중인 상태가 아니며 더 이상 로드할 것이 없고 현재 리스트에 아무것도 로드되지 않음
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    modifier = Modifier.fillMaxSize(0.2f),
+                    imageVector = Icons.Default.BrokenImage,
+                    contentDescription = Icons.Default.BrokenImage.name
                 )
+                Text(text = "이미지가 없습니다.")
+            }
+        } else {
+            LazyVerticalGrid(
+                cells = GridCells.Adaptive(minSize = size.dp)
+            ) {
+                itemsIndexed(
+                    items = mediaStoreImages,
+                    key = { _, mediaStoreImage ->
+                        mediaStoreImage.id
+                    }
+                ) { index, mediaStoreImage ->
+                    Image(
+                        painter = rememberImagePainter(
+                            data = mediaStoreImage?.contentUri,
+                            builder = {
+                                crossfade(true)
+                                placeholder(R.drawable.image_placeholder)
+                            }
+                        ),
+                        modifier = Modifier
+                            .height(size.dp)
+                            .clickable { onImageClick(index) },
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.Center
+                    )
+                }
             }
         }
     }

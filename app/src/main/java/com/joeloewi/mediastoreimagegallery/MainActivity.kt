@@ -11,10 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.joeloewi.mediastoreimagegallery.ui.mediastoreimagegallery.CameraScreen
 import com.joeloewi.mediastoreimagegallery.ui.mediastoreimagegallery.GriddedMediaStoreImagesScreen
@@ -59,8 +61,19 @@ fun MediaStoreImageGalleryApp() {
                         )
                     }
 
-                    composable("pagedMediaStoreImagesScreen") {
-                        PagedMediaStoreImagesScreen()
+                    composable(
+                        route = "pagedMediaStoreImagesScreen/{index}",
+                        arguments = listOf(
+                            navArgument("index") {
+                                type = NavType.IntType
+                            }
+                        )
+                    ) { navBackStackEntry ->
+                        val index = navBackStackEntry.arguments?.getInt("index") ?: 0
+
+                        PagedMediaStoreImagesScreen(
+                            index = index
+                        )
                     }
 
                     composable("cameraScreen") {

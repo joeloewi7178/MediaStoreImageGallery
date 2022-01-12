@@ -6,6 +6,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyGridScope
@@ -118,8 +119,8 @@ fun GriddedMediaStoreImagesScreen(
         GriddedMediaStoreImageContent(
             mediaStoreImages = mediaStoreImages,
             cells = mediaStoreImagesViewModel.cells,
-            onImageClick = {
-                navController.navigate("pagedMediaStoreImagesScreen")
+            onImageClick = { index ->
+                navController.navigate("pagedMediaStoreImagesScreen/${index}")
             },
             onAddImageClick = {
                 navController.navigate("cameraScreen")
@@ -133,7 +134,7 @@ fun GriddedMediaStoreImagesScreen(
 fun GriddedMediaStoreImageContent(
     mediaStoreImages: LazyPagingItems<MediaStoreImage>,
     cells: Int,
-    onImageClick: () -> Unit,
+    onImageClick: (Int) -> Unit,
     onAddImageClick: () -> Unit
 ) {
     //이미지를 리스트화 하는 경우에는 이미지의 높이(크기)가 지정되어야 제대로 표시됨
@@ -168,7 +169,9 @@ fun GriddedMediaStoreImageContent(
                             placeholder(R.drawable.image_placeholder)
                         }
                     ),
-                    modifier = Modifier.size(size = size.dp),
+                    modifier = Modifier
+                        .size(size = size.dp)
+                        .clickable { onImageClick(index) },
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center

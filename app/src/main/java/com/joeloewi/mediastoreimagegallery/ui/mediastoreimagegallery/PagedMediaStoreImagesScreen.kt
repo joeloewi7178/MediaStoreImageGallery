@@ -11,7 +11,9 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.Lifecycle
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.rememberImagePainter
@@ -50,9 +52,10 @@ fun PagedMediaStoreImagesContent(
 ) {
     val scaffoldState = rememberScaffoldState()
     val horizontalPagerState = rememberPagerState()
+    val localLifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(horizontalPagerState.pageCount) {
-        if (horizontalPagerState.pageCount > index) {
+        if (horizontalPagerState.pageCount > index && localLifecycleOwner.lifecycle.currentState == Lifecycle.State.STARTED) {
             horizontalPagerState.runCatching {
                 scrollToPage(page = index)
             }.onFailure { cause ->

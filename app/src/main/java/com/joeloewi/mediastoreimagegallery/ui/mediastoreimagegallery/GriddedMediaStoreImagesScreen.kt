@@ -4,14 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.GridCells
-import androidx.compose.foundation.lazy.LazyGridScope
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyVerticalGrid
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
@@ -22,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -31,7 +30,9 @@ import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import coil.compose.rememberImagePainter
+import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionsRequired
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -141,9 +142,6 @@ fun GriddedMediaStoreImageContent(
     onAddImageClick: () -> Unit
 ) {
     //이미지를 리스트화 하는 경우에는 이미지의 높이(크기)가 지정되어야 제대로 표시됨
-    val density = LocalContext.current.resources.displayMetrics.density
-    val width = LocalView.current.width
-    val size = (width / density) / cells
     val mediaStoreImagesLoadState = mediaStoreImages.loadState
 
     Scaffold(
@@ -173,26 +171,113 @@ fun GriddedMediaStoreImageContent(
             }
         } else {
             LazyVerticalGrid(
-                cells = GridCells.Adaptive(minSize = size.dp)
+                cells = GridCells.Fixed(count = cells)
             ) {
+                when (mediaStoreImagesLoadState.prepend) {
+                    is LoadState.Loading -> {
+                        item(
+                            span = { GridItemSpan(currentLineSpan = maxCurrentLineSpan) }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+
+                    is LoadState.NotLoading -> {
+
+                    }
+
+                    is LoadState.Error -> {
+                        item(
+                            span = { GridItemSpan(currentLineSpan = maxCurrentLineSpan) }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(text = "오류가 발생했습니다.")
+                                TextButton(
+                                    onClick = { mediaStoreImages.retry() }
+                                ) {
+                                    Text(text = "다시시도")
+                                }
+                            }
+                        }
+                    }
+                }
+
                 itemsIndexed(
                     items = mediaStoreImages,
                 ) { index, mediaStoreImage ->
-                    Image(
-                        painter = rememberImagePainter(
-                            data = mediaStoreImage?.contentUri,
-                            builder = {
-                                crossfade(true)
-                                placeholder(R.drawable.image_placeholder)
-                            }
-                        ),
+                    val density = LocalContext.current.resources.displayMetrics.density
+                    val width = LocalView.current.width
+                    val size = (width / density) / cells
+
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(mediaStoreImage?.contentUri)
+                            .crossfade(true)
+                            .placeholder(R.drawable.image_placeholder)
+                            .placeholderMemoryCacheKey(mediaStoreImage?.id?.toString())
+                            .build(),
                         modifier = Modifier
-                            .height(size.dp)
+                            .size(size.dp)
+                            .animateItemPlacement()
                             .clickable { onImageClick(index) },
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         alignment = Alignment.Center
                     )
+                }
+
+                when (mediaStoreImagesLoadState.append) {
+                    is LoadState.Loading -> {
+                        item(
+                            span = { GridItemSpan(currentLineSpan = maxCurrentLineSpan) }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+
+                    is LoadState.NotLoading -> {
+
+                    }
+
+                    is LoadState.Error -> {
+                        item(
+                            span = { GridItemSpan(currentLineSpan = maxCurrentLineSpan) }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(color = Color.Red),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(text = "오류가 발생했습니다.")
+                                TextButton(
+                                    onClick = { mediaStoreImages.retry() }
+                                ) {
+                                    Text(text = "다시시도")
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -203,23 +288,23 @@ fun GriddedMediaStoreImageContent(
 fun <T : Any> LazyGridScope.itemsIndexed(
     items: LazyPagingItems<T>,
     key: ((index: Int, item: T) -> Any)? = null,
+    spans: (LazyGridItemSpanScope.(index: Int, item: T?) -> GridItemSpan)? = null,
     itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit
-) {
-    items(
-        count = items.itemCount
-    ) { index ->
-        key(
-            if (key == null) null else {
-                val item = items.peek(index)
-                if (item == null) {
-                    PagingPlaceholderKey(index)
-                } else {
-                    key(index, item)
-                }
+) = items(
+    count = items.itemCount,
+    spans?.let { { spans(it, items.peek(it)) } }
+) { index ->
+    key(
+        if (key == null) null else {
+            val item = items.peek(index)
+            if (item == null) {
+                PagingPlaceholderKey(index)
+            } else {
+                key(index, item)
             }
-        ) {
-            itemContent(index, items[index])
         }
+    ) {
+        itemContent(index, items[index])
     }
 }
 

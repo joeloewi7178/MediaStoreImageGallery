@@ -9,7 +9,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
-import android.util.Log
 import androidx.core.os.bundleOf
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
@@ -37,16 +36,14 @@ class MediaStoreImageDaoImpl @Inject constructor(
                     object : ContentObserver(Handler(Looper.getMainLooper())) {
                         override fun onChange(selfChange: Boolean) {
                             super.onChange(selfChange)
-                            if (!invalid) {
-                                invalidate()
-                            }
+                            invalidate()
                         }
                     }
                 )
             }
 
             override fun getRefreshKey(state: PagingState<Int, MediaStoreImage>): Int? =
-                state.anchorPosition
+                state.anchorPosition?.let { state.closestPageToPosition(it) }?.prevKey?.minus(1)
 
             override val jumpingSupported: Boolean = true
 
@@ -115,8 +112,9 @@ class MediaStoreImageDaoImpl @Inject constructor(
 
                     LoadResult.Page(
                         data = mediaStoreImages,
-                        prevKey = offset.takeIf { it > 0 }?.let { it - 1 },
-                        nextKey = if (mediaStoreImages.isEmpty()) null else offset + (params.loadSize / pageSize)
+                        prevKey = if (mediaStoreImages.isEmpty() && params is LoadParams.Prepend) null else offset.takeIf { it > 0 }
+                            ?.let { it - 1 },
+                        nextKey = if (mediaStoreImages.isEmpty() && params is LoadParams.Append) null else offset + (limit / pageSize)
                     )
                 } catch (cause: Throwable) {
                     LoadResult.Error(cause)

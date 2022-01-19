@@ -114,6 +114,9 @@ dependencies {
 
     //listenable future to coroutine
     implementation("androidx.concurrent:concurrent-futures-ktx:${Versions.concurrentFuture}")
+
+    //start up
+    implementation("androidx.startup:startup-runtime:${Versions.startup}")
 }
 
 kapt {

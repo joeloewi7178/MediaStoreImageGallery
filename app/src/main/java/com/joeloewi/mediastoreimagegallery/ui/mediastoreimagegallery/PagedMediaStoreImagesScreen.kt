@@ -1,29 +1,27 @@
 package com.joeloewi.mediastoreimagegallery.ui.mediastoreimagegallery
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Scaffold
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.Lifecycle
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import coil.compose.rememberImagePainter
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerDefaults
 import com.google.accompanist.pager.rememberPagerState
-import com.joeloewi.mediastoreimagegallery.R
 import com.joeloewi.mediastoreimagegallery.data.mediastore.model.MediaStoreImage
-import com.joeloewi.mediastoreimagegallery.data.mediastore.model.PagingPlaceholderKey
 import com.joeloewi.mediastoreimagegallery.ui.theme.MediaStoreImageGalleryTheme
 import com.joeloewi.mediastoreimagegallery.viewmodel.MediaStoreImagesViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
@@ -72,28 +70,21 @@ fun PagedMediaStoreImagesContent(
         HorizontalPager(
             count = mediaStoreImages.itemCount,
             flingBehavior = PagerDefaults.flingBehavior(horizontalPagerState),
-            state = horizontalPagerState
-        ) { page ->
-            key(
-                PagingPlaceholderKey(page)
-            ) {
-                val mediaStoreImage = mediaStoreImages[page]
-
-                Image(
-                    painter = rememberImagePainter(
-                        data = mediaStoreImage?.contentUri,
-                        builder = {
-                            crossfade(true)
-                            placeholder(R.drawable.image_placeholder)
-                        }
-                    ),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(color = Color.Black),
-                    contentDescription = null,
-                    alignment = Alignment.Center
-                )
+            state = horizontalPagerState,
+            key = { page ->
+                mediaStoreImages.peek(page)?.id ?: page
             }
+        ) { page ->
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(mediaStoreImages[page]?.contentUri)
+                    .build(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = Color.Black),
+                contentDescription = null,
+                alignment = Alignment.Center
+            )
         }
     }
 }

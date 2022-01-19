@@ -8,4 +8,5 @@ object Versions {
     const val camera = "1.1.0-alpha10"
     const val cameraExtension = "1.0.0-alpha30"
     const val concurrentFuture = "1.1.0"
+    const val startup = "1.1.0"
 }

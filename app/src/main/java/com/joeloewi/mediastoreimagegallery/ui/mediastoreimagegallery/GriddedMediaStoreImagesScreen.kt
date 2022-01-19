@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,12 +30,10 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
-import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionsRequired
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.joeloewi.mediastoreimagegallery.R
 import com.joeloewi.mediastoreimagegallery.data.mediastore.model.MediaStoreImage
 import com.joeloewi.mediastoreimagegallery.data.mediastore.model.PagingPlaceholderKey
 import com.joeloewi.mediastoreimagegallery.ui.theme.MediaStoreImageGalleryTheme
@@ -216,6 +213,9 @@ fun GriddedMediaStoreImageContent(
 
                 itemsIndexed(
                     items = mediaStoreImages,
+                    key = { _, item ->
+                        item.id
+                    }
                 ) { index, mediaStoreImage ->
                     val density = LocalContext.current.resources.displayMetrics.density
                     val width = LocalView.current.width
@@ -224,9 +224,6 @@ fun GriddedMediaStoreImageContent(
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(mediaStoreImage?.contentUri)
-                            .crossfade(true)
-                            .placeholder(R.drawable.image_placeholder)
-                            .placeholderMemoryCacheKey(mediaStoreImage?.id?.toString())
                             .build(),
                         modifier = Modifier
                             .size(size.dp)

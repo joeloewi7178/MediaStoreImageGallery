@@ -100,6 +100,7 @@ dependencies {
     //accompanist
     implementation("com.google.accompanist:accompanist-permissions:${Versions.accompanist}")
     implementation("com.google.accompanist:accompanist-pager:${Versions.accompanist}")
+    implementation ("com.google.accompanist:accompanist-placeholder:${Versions.accompanist}")
 
     //image load
     implementation("io.coil-kt:coil-compose:${Versions.coil}")

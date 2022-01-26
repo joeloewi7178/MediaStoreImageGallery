@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -14,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,6 +34,9 @@ import coil.request.ImageRequest
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionsRequired
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.fade
+import com.google.accompanist.placeholder.placeholder
 import com.joeloewi.mediastoreimagegallery.data.mediastore.model.MediaStoreImage
 import com.joeloewi.mediastoreimagegallery.data.mediastore.model.PagingPlaceholderKey
 import com.joeloewi.mediastoreimagegallery.ui.theme.MediaStoreImageGalleryTheme
@@ -140,8 +143,38 @@ fun GriddedMediaStoreImageContent(
 ) {
     //이미지를 리스트화 하는 경우에는 이미지의 높이(크기)가 지정되어야 제대로 표시됨
     val mediaStoreImagesLoadState = mediaStoreImages.loadState
+    val scaffoldState = rememberScaffoldState()
+
+    LaunchedEffect(mediaStoreImagesLoadState) {
+        var errorOccurred = false
+
+        mediaStoreImages.loadState.source.forEach { _, loadState ->
+            if (loadState is LoadState.Error) {
+                errorOccurred = true
+                return@forEach
+            }
+        }
+
+        if (errorOccurred) {
+            val snackbarResult = scaffoldState.snackbarHostState.showSnackbar(
+                message = "오류가 발생했습니다.",
+                actionLabel = "다시 시도",
+                duration = SnackbarDuration.Indefinite
+            )
+
+            when (snackbarResult) {
+                SnackbarResult.Dismissed -> {
+
+                }
+                SnackbarResult.ActionPerformed -> {
+                    mediaStoreImages.retry()
+                }
+            }
+        }
+    }
 
     Scaffold(
+        scaffoldState = scaffoldState,
         floatingActionButton = {
             FloatingActionButton(onClick = onAddImageClick) {
                 Icon(
@@ -170,47 +203,6 @@ fun GriddedMediaStoreImageContent(
             LazyVerticalGrid(
                 cells = GridCells.Fixed(count = cells)
             ) {
-                when (mediaStoreImagesLoadState.prepend) {
-                    is LoadState.Loading -> {
-                        item(
-                            span = { GridItemSpan(currentLineSpan = maxCurrentLineSpan) }
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-                    }
-
-                    is LoadState.NotLoading -> {
-
-                    }
-
-                    is LoadState.Error -> {
-                        item(
-                            span = { GridItemSpan(currentLineSpan = maxCurrentLineSpan) }
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(text = "오류가 발생했습니다.")
-                                TextButton(
-                                    onClick = { mediaStoreImages.retry() }
-                                ) {
-                                    Text(text = "다시시도")
-                                }
-                            }
-                        }
-                    }
-                }
-
                 itemsIndexed(
                     items = mediaStoreImages,
                     key = { _, item ->
@@ -227,54 +219,18 @@ fun GriddedMediaStoreImageContent(
                             .build(),
                         modifier = Modifier
                             .size(size.dp)
-                            .animateItemPlacement()
-                            .clickable { onImageClick(index) },
+                            .clickable { onImageClick(index) }
+                            .placeholder(
+                                visible = mediaStoreImage == null,
+                                color = Color.Gray,
+                                highlight = PlaceholderHighlight.fade(
+                                    highlightColor = MaterialTheme.colors.background,
+                                )
+                            ),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         alignment = Alignment.Center
                     )
-                }
-
-                when (mediaStoreImagesLoadState.append) {
-                    is LoadState.Loading -> {
-                        item(
-                            span = { GridItemSpan(currentLineSpan = maxCurrentLineSpan) }
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-                    }
-
-                    is LoadState.NotLoading -> {
-
-                    }
-
-                    is LoadState.Error -> {
-                        item(
-                            span = { GridItemSpan(currentLineSpan = maxCurrentLineSpan) }
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(color = Color.Red),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(text = "오류가 발생했습니다.")
-                                TextButton(
-                                    onClick = { mediaStoreImages.retry() }
-                                ) {
-                                    Text(text = "다시시도")
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }

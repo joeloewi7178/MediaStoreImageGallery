@@ -20,8 +20,7 @@ class MediaStoreImagesViewModel @Inject constructor(
     val mediaStoreImages = Pager(
         config = PagingConfig(
             pageSize = mediaStoreImageDao.pageSize,
-            jumpThreshold = mediaStoreImageDao.pageSize * 5
         ),
-        pagingSourceFactory = { mediaStoreImageDao.getImages() }
+        pagingSourceFactory = { mediaStoreImageDao.getPagedImages() }
     ).flow.flowOn(Dispatchers.IO).cachedIn(viewModelScope)
 }

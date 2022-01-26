@@ -13,5 +13,9 @@ interface MediaStoreImageDao {
 
     val pageSize: Int
 
-    fun getImages(): PagingSource<Int, MediaStoreImage>
+    suspend fun getImages(limit: Int, offset: Int): List<MediaStoreImage>
+
+    suspend fun getTotalCount(): Int
+
+    fun getPagedImages(): PagingSource<Int, MediaStoreImage>
 }

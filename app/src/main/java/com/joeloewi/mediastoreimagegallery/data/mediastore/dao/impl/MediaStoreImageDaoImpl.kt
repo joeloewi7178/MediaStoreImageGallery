@@ -26,100 +26,178 @@ class MediaStoreImageDaoImpl @Inject constructor(
 
     override val pageSize: Int = 8
 
-    override fun getImages(): PagingSource<Int, MediaStoreImage> =
+    override suspend fun getImages(limit: Int, offset: Int): List<MediaStoreImage> {
+        val projection = arrayOf(
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.DATE_ADDED,
+        )
+
+        //bundle을 이용하는 쿼리는 26부터 사용가능한데 26, 27의 가상 기기에서 이미 로드된 데이터를 다시 로드 하는 문제가 있어
+        //사용이 강제화된 29부터 사용하도록 함
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val bundle = bundleOf(
+                ContentResolver.QUERY_ARG_OFFSET to offset,
+                ContentResolver.QUERY_ARG_LIMIT to limit,
+                ContentResolver.QUERY_ARG_SORT_COLUMNS to arrayOf(MediaStore.Images.Media.DATE_ADDED),
+                ContentResolver.QUERY_ARG_SORT_DIRECTION to ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
+            )
+
+            contentResolver.query(
+                uri,
+                projection,
+                bundle,
+                null
+            )
+        } else {
+            contentResolver.query(
+                uri,
+                projection,
+                null,
+                null,
+                "${MediaStore.Images.Media.DATE_ADDED} DESC LIMIT $limit OFFSET $offset",
+                null
+            )
+        }!!.use {
+            val mediaStoreImages = mutableListOf<MediaStoreImage>()
+
+            val cursorIndexOfId =
+                it.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+            val cursorIndexOfDateAdded =
+                it.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
+
+            while (it.moveToNext()) {
+                val id = it.getLong(cursorIndexOfId)
+                val dateAdded = it.getLong(cursorIndexOfDateAdded)
+                val contentUri = ContentUris.withAppendedId(
+                    uri,
+                    id
+                )
+
+                mediaStoreImages.add(
+                    MediaStoreImage(
+                        id = id,
+                        contentUri = contentUri,
+                        dateAdded = dateAdded
+                    )
+                )
+            }
+
+            mediaStoreImages
+        }
+    }
+
+    override suspend fun getTotalCount(): Int {
+        val projection = arrayOf(
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.DATE_ADDED,
+        )
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            contentResolver.query(
+                uri,
+                projection,
+                null,
+                null
+            )
+        } else {
+            contentResolver.query(
+                uri,
+                projection,
+                null,
+                null,
+                null,
+                null
+            )
+        }!!.use {
+            it.count
+        }
+    }
+
+    override fun getPagedImages(): PagingSource<Int, MediaStoreImage> =
         object : PagingSource<Int, MediaStoreImage>() {
+
+            private val contentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    super.onChange(selfChange)
+                    invalidate()
+                }
+            }
 
             init {
                 contentResolver.registerContentObserver(
                     uri,
                     true,
-                    object : ContentObserver(Handler(Looper.getMainLooper())) {
-                        override fun onChange(selfChange: Boolean) {
-                            super.onChange(selfChange)
-                            invalidate()
-                        }
-                    }
+                    contentObserver
                 )
+
+                registerInvalidatedCallback {
+                    contentResolver.unregisterContentObserver(contentObserver)
+                }
             }
 
-            override fun getRefreshKey(state: PagingState<Int, MediaStoreImage>): Int? =
-                state.anchorPosition?.let { state.closestPageToPosition(it) }?.prevKey?.minus(1)
+            override fun getRefreshKey(state: PagingState<Int, MediaStoreImage>): Int? {
+                val page = state.anchorPosition?.let { state.closestPageToPosition(it) }
+                val prevKey = page?.prevKey ?: 0
+
+                val item = state.anchorPosition?.let { state.closestItemToPosition(it) }
+
+                return prevKey + (page?.data?.indexOf(item)?.takeIf { it >= 0 } ?: 0)
+            }
 
             override val jumpingSupported: Boolean = true
 
             override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MediaStoreImage> {
+                var limit = params.loadSize
+                var offset = params.key ?: 0
 
-                val projection = arrayOf(
-                    MediaStore.Images.Media._ID,
-                    MediaStore.Images.Media.DATE_ADDED,
-                )
+                if (params is LoadParams.Refresh) {
+                    //params.loadSize가 initialLoadSize
+                    //기본값은 initialLoadSize = pageSize * 3
+                    if (params.placeholdersEnabled) {
+                        limit = maxOf(limit / pageSize, 2) * pageSize
 
-                val limit = params.loadSize
-
-                val offset = params.key ?: 0
-
-                //bundle을 이용하는 쿼리는 26부터 사용가능한데 26, 27의 가상 기기에서 이미 로드된 데이터를 다시 로드 하는 문제가 있어
-                //사용이 강제화된 29부터 사용하도록 함
-                val cursor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val bundle = bundleOf(
-                        ContentResolver.QUERY_ARG_OFFSET to limit * offset,
-                        ContentResolver.QUERY_ARG_LIMIT to limit,
-                        ContentResolver.QUERY_ARG_SORT_COLUMNS to arrayOf(MediaStore.Images.Media.DATE_ADDED),
-                        ContentResolver.QUERY_ARG_SORT_DIRECTION to ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
-                    )
-
-                    contentResolver.query(
-                        uri,
-                        projection,
-                        bundle,
-                        null
-                    )
+                        val idealStart = offset - limit / 2
+                        offset = maxOf(0, idealStart / pageSize * pageSize)
+                    } else {
+                        offset = maxOf(0, offset - limit / 2)
+                    }
                 } else {
-                    contentResolver.query(
-                        uri,
-                        projection,
-                        null,
-                        null,
-                        "${MediaStore.Images.Media.DATE_ADDED} DESC LIMIT $limit OFFSET ${limit * offset}",
-                        null
-                    )
+                    if (params is LoadParams.Prepend) {
+                        limit = minOf(limit, offset)
+                        offset -= limit
+                    }
                 }
 
                 return try {
-                    val mediaStoreImages = mutableListOf<MediaStoreImage>()
+                    val mediaStoreImages = getImages(limit, offset)
+                    val totalCount = getTotalCount()
 
-                    val cursorIndexOfId =
-                        cursor!!.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-                    val cursorIndexOfDateAdded =
-                        cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
+                    if (invalid) {
+                        LoadResult.Invalid()
+                    } else {
+                        val prevKey = if (offset == 0) null else offset
+                        val nextKey = offset + mediaStoreImages.size
 
-                    while (cursor.moveToNext()) {
-                        val id = cursor.getLong(cursorIndexOfId)
-                        val dateAdded = cursor.getLong(cursorIndexOfDateAdded)
-                        val contentUri = ContentUris.withAppendedId(
-                            uri,
-                            id
-                        )
-
-                        mediaStoreImages.add(
-                            MediaStoreImage(
-                                id = id,
-                                contentUri = contentUri,
-                                dateAdded = dateAdded
+                        if (params is LoadParams.Refresh) {
+                            LoadResult.Page(
+                                data = mediaStoreImages,
+                                prevKey = if (mediaStoreImages.isEmpty()) null else prevKey,
+                                nextKey = if (mediaStoreImages.isEmpty()) null else nextKey,
+                                itemsBefore = offset,
+                                itemsAfter = totalCount - mediaStoreImages.size - offset
                             )
-                        )
+                        } else {
+                            LoadResult.Page(
+                                data = mediaStoreImages,
+                                prevKey = if (mediaStoreImages.isEmpty() && params is LoadParams.Prepend) null else prevKey,
+                                nextKey = if (mediaStoreImages.isEmpty() && params is LoadParams.Append) null else nextKey,
+                                itemsBefore = offset,
+                                itemsAfter = totalCount - mediaStoreImages.size - offset
+                            )
+                        }
                     }
-
-                    LoadResult.Page(
-                        data = mediaStoreImages,
-                        prevKey = if (mediaStoreImages.isEmpty() && params is LoadParams.Prepend) null else offset.takeIf { it > 0 }
-                            ?.let { it - 1 },
-                        nextKey = if (mediaStoreImages.isEmpty() && params is LoadParams.Append) null else offset + (limit / pageSize)
-                    )
                 } catch (cause: Throwable) {
                     LoadResult.Error(cause)
-                } finally {
-                    cursor?.close()
                 }
             }
         }
